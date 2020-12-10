@@ -48,7 +48,7 @@ Button button1;
 const Btn_init_attr attr = { .pin_level = button_pin_level, .active_level =
 		GPIO_PIN_RESET, .event = { SINGLE_CLICK, DOUBLE_CLICK, PRESS_REPEAT,
 		LONG_PRESS_START, PRESS_UP, LONG_PRESS_HOLD, PRESS_DOWN },
-		.event_size = 7, .cb = btn_test_cb };
+		.event_size = 7, .callback = btn_test_cb };
 button_init(&button1, &attr);
 
 while (1) {
