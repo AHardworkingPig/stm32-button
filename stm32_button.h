@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Modify according to your STM32 MCU
+// Modify according to your STM32 MCU/MPU
 #include "stm32f1xx_hal.h"
 
 // According to your need to modify the constants.
@@ -15,18 +15,19 @@
 #define LONG_TICKS (1000 / TICKS_INTERVAL)
 
 typedef enum {
-	PRESS_DOWN = 0,
+	PRESS_DOWN = 1,
 	PRESS_UP,
 	PRESS_REPEAT,
 	SINGLE_CLICK,
 	DOUBLE_CLICK,
 	LONG_PRESS_START,
 	LONG_PRESS_HOLD,
-	number_of_event,
 	NONE_PRESS
 } PressEvent;
 
 typedef void (*BtnCallback)(void*, PressEvent);
+
+#define EVENT_NUM (uint8_t)7
 
 typedef struct Button {
 	uint16_t ticks;
@@ -38,7 +39,7 @@ typedef struct Button {
 	uint8_t button_level :1;
 	GPIO_TypeDef *GPIOx;
 	uint16_t GPIO_PIN_x;
-	BtnCallback cb[number_of_event];
+	BtnCallback cb[EVENT_NUM ];
 	struct Button *next;
 } Button;
 
@@ -46,8 +47,7 @@ typedef struct {
 	GPIO_TypeDef *GPIOx;
 	uint16_t GPIO_PIN_x;
 	GPIO_PinState active_level :1;
-	PressEvent event[number_of_event];
-	uint8_t event_size :3;
+	PressEvent event[EVENT_NUM ];
 } Btn_init_attr;
 
 #ifdef __cplusplus

@@ -24,11 +24,10 @@ STM32 Button 是一个小巧简单易用的事件驱动型按键驱动模块，�
 
 Button button1;
 const Btn_init_attr attr = { .GPIO_PIN_x = GPIO_PIN_2, .GPIOx = GPIOC, .event =
-		{ SINGLE_CLICK }, .event_size = 1, .active_level = GPIO_PIN_RESET };
+		{ SINGLE_CLICK }, .active_level = GPIO_PIN_RESET };
 Button button2;
 const Btn_init_attr attr2 = { .GPIO_PIN_x = GPIO_PIN_2, .GPIOx = GPIOC, .event =
-		{ DOUBLE_CLICK, LONG_PRESS_START }, .event_size = 2, .active_level =
-		GPIO_PIN_RESET };
+		{ DOUBLE_CLICK, LONG_PRESS_START }, .active_level = GPIO_PIN_RESET };
 
 button_init(&button1, &attr);
 button_init(&button2, &attr2);

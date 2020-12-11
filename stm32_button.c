@@ -4,14 +4,14 @@
 	if (handle->cb[ev]) \
 	handle->cb[ev]((Button *)handle,(PressEvent) (handle->event))
 
-//button handle list head.
+// button handle list head.
 static Button *head_handle = NULL;
 
 /**
  * @brief  Initializes the button struct handle.
  * @param  handle: the button handle struct.
  * @param  attr: button attr instance.
- * @retval 0: succeed. -1: already exist.
+ * @retval 0: succeed. -1: already exist. -2: event error.
  */
 int8_t button_init(Button *handle, const Btn_init_attr *attr) {
 	Button *target = head_handle;
@@ -28,10 +28,30 @@ int8_t button_init(Button *handle, const Btn_init_attr *attr) {
 	handle->active_level = (uint8_t) attr->active_level;
 	handle->button_level = !handle->active_level;
 
-	// Attach the button event and callback function
-	for (uint8_t i = 0; i < attr->event_size; i++) {
-		handle->cb[attr->event[i]] =
-				(void (*)(void*, PressEvent)) button_callback;
+	// Attach the button event callback function
+	for (uint8_t i = 0; i < EVENT_NUM ; i++) {
+		if (attr->event[i] == 0) {
+			if (i == 0) {
+				goto EVENT_ERROR;
+			} else {
+				const uint8_t next = i++;
+				if (next == EVENT_NUM) {
+					break; // event attach success
+				}
+				for (uint8_t m = next; m < EVENT_NUM ; m++) {
+					if (attr->event[m]) {
+						goto EVENT_ERROR;
+					}
+				}
+				break; // event attach success
+			}
+		} else if (attr->event[i] < 0 || attr->event[i] > EVENT_NUM) {
+			EVENT_ERROR: memset(handle, 0, sizeof(Button));
+			return -2; // event error!
+		} else {
+			handle->cb[attr->event[i]] =
+					(void (*)(void*, PressEvent)) button_callback;
+		}
 	}
 
 	// start button
@@ -49,25 +69,25 @@ static void button_handler(Button *handle) {
 	uint8_t read_gpio_level = (uint8_t) HAL_GPIO_ReadPin(handle->GPIOx,
 			handle->GPIO_PIN_x);
 
-	//ticks counter working..
+	// ticks counter working..
 	if ((handle->state) > 0)
 		handle->ticks++;
 
 	/*------------button debounce handle---------------*/
-	if (read_gpio_level != handle->button_level) { //not equal to prev one
-												   //continue read 3 times same new level change
+	if (read_gpio_level != handle->button_level) { // not equal to prev one
+												   // continue read 3 times same new level change
 		if (++(handle->debounce_cnt) >= DEBOUNCE_TICKS) {
 			handle->button_level = read_gpio_level;
 			handle->debounce_cnt = 0;
 		}
-	} else { //leved not change ,counter reset.
+	} else { // leved not change ,counter reset.
 		handle->debounce_cnt = 0;
 	}
 
 	/*-----------------State machine-------------------*/
 	switch (handle->state) {
 	case 0:
-		if (handle->button_level == handle->active_level) { //start press down
+		if (handle->button_level == handle->active_level) { // start press down
 			handle->event = (uint8_t) PRESS_DOWN;
 			EVENT_CB(PRESS_DOWN);
 			handle->ticks = 0;
@@ -79,7 +99,7 @@ static void button_handler(Button *handle) {
 		break;
 
 	case 1:
-		if (handle->button_level != handle->active_level) { //released press up
+		if (handle->button_level != handle->active_level) { // released press up
 			handle->event = (uint8_t) PRESS_UP;
 			EVENT_CB(PRESS_UP);
 			handle->ticks = 0;
@@ -92,7 +112,7 @@ static void button_handler(Button *handle) {
 		break;
 
 	case 2:
-		if (handle->button_level == handle->active_level) { //press down again
+		if (handle->button_level == handle->active_level) { // press down again
 			handle->event = (uint8_t) PRESS_DOWN;
 			EVENT_CB(PRESS_DOWN);
 			handle->repeat++;
@@ -100,7 +120,7 @@ static void button_handler(Button *handle) {
 			EVENT_CB(PRESS_REPEAT); // repeat hit
 			handle->ticks = 0;
 			handle->state = 3;
-		} else if (handle->ticks > SHORT_TICKS) { //released timeout
+		} else if (handle->ticks > SHORT_TICKS) { // released timeout
 			if (handle->repeat == 1) {
 				handle->event = (uint8_t) SINGLE_CLICK;
 				EVENT_CB(SINGLE_CLICK);
@@ -113,12 +133,12 @@ static void button_handler(Button *handle) {
 		break;
 
 	case 3:
-		if (handle->button_level != handle->active_level) { //released press up
+		if (handle->button_level != handle->active_level) { // released press up
 			handle->event = (uint8_t) PRESS_UP;
 			EVENT_CB(PRESS_UP);
 			if (handle->ticks < SHORT_TICKS) {
 				handle->ticks = 0;
-				handle->state = 2; //repeat press
+				handle->state = 2; // repeat press
 			} else {
 				handle->state = 0;
 			}
@@ -129,13 +149,13 @@ static void button_handler(Button *handle) {
 
 	case 5:
 		if (handle->button_level == handle->active_level) {
-			//continue hold trigger
+			// continue hold trigger
 			handle->event = (uint8_t) LONG_PRESS_HOLD;
 			EVENT_CB(LONG_PRESS_HOLD);
-		} else { //released
+		} else { // released
 			handle->event = (uint8_t) PRESS_UP;
 			EVENT_CB(PRESS_UP);
-			handle->state = 0; //reset
+			handle->state = 0; // reset
 		}
 		break;
 	}
