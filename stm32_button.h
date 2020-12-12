@@ -15,19 +15,24 @@
 #define LONG_TICKS (1000 / TICKS_INTERVAL)
 
 typedef enum {
-	PRESS_DOWN = 1,
+	PRESS_DOWN = 0u,
 	PRESS_UP,
 	PRESS_REPEAT,
 	SINGLE_CLICK,
 	DOUBLE_CLICK,
 	LONG_PRESS_START,
-	LONG_PRESS_HOLD,
-	NONE_PRESS
+	LONG_PRESS_HOLD
 } PressEvent;
 
-typedef void (*BtnCallback)(void*, PressEvent);
+enum {
+	EVENT_NUM = 7u, NONE_PRESS
+};
 
-#define EVENT_NUM (uint8_t)7
+typedef enum {
+	ONE = 1u, TWO, THREE, FOUR, FIVE, SIX, SEVEN
+} EventNumber;
+
+typedef void (*BtnCallback)(void*, PressEvent);
 
 typedef struct Button {
 	uint16_t ticks;
@@ -39,7 +44,7 @@ typedef struct Button {
 	uint8_t button_level :1;
 	GPIO_TypeDef *GPIOx;
 	uint16_t GPIO_PIN_x;
-	BtnCallback cb[EVENT_NUM ];
+	BtnCallback cb[EVENT_NUM];
 	struct Button *next;
 } Button;
 
@@ -47,7 +52,8 @@ typedef struct {
 	GPIO_TypeDef *GPIOx;
 	uint16_t GPIO_PIN_x;
 	GPIO_PinState active_level :1;
-	PressEvent event[EVENT_NUM ];
+	PressEvent event[EVENT_NUM];
+	EventNumber event_num;
 } Btn_init_attr;
 
 #ifdef __cplusplus

@@ -11,7 +11,7 @@ static Button *head_handle = NULL;
  * @brief  Initializes the button struct handle.
  * @param  handle: the button handle struct.
  * @param  attr: button attr instance.
- * @retval 0: succeed. -1: already exist. -2: event error.
+ * @retval 0: succeed. -1: already exist.
  */
 int8_t button_init(Button *handle, const Btn_init_attr *attr) {
 	Button *target = head_handle;
@@ -29,29 +29,9 @@ int8_t button_init(Button *handle, const Btn_init_attr *attr) {
 	handle->button_level = !handle->active_level;
 
 	// Attach the button event callback function
-	for (uint8_t i = 0; i < EVENT_NUM ; i++) {
-		if (attr->event[i] == 0) {
-			if (i == 0) {
-				goto EVENT_ERROR;
-			} else {
-				const uint8_t next = i++;
-				if (next == EVENT_NUM) {
-					break; // event attach success
-				}
-				for (uint8_t m = next; m < EVENT_NUM ; m++) {
-					if (attr->event[m]) {
-						goto EVENT_ERROR;
-					}
-				}
-				break; // event attach success
-			}
-		} else if (attr->event[i] < 0 || attr->event[i] > EVENT_NUM) {
-			EVENT_ERROR: memset(handle, 0, sizeof(Button));
-			return -2; // event error!
-		} else {
-			handle->cb[attr->event[i]] =
-					(void (*)(void*, PressEvent)) button_callback;
-		}
+	for (uint8_t i = 0; i < attr->event_num; i++) {
+		handle->cb[attr->event[i]] =
+				(void (*)(void*, PressEvent)) button_callback;
 	}
 
 	// start button
