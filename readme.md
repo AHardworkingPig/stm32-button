@@ -22,11 +22,14 @@ STM32 Button 是一个小巧简单易用的事件驱动型按键驱动模块，�
 ```c
 #include "stm32_button.h"
 
-Button button1;
+Button_t button1, button2;
 const Btn_init_attr attr = { .GPIO_PIN_x = GPIO_PIN_2, .GPIOx = GPIOC, .event =
+		{ PRESS_DOWN }, .event_num = ONE, .active_level = GPIO_PIN_RESET };
+const Btn_init_attr attr2 = { .GPIO_PIN_x = GPIO_PIN_2, .GPIOx = GPIOC, .event =
 		{ PRESS_REPEAT }, .event_num = ONE, .active_level = GPIO_PIN_RESET };
 
-button_init(&button1, &attr);
+button1 = button_init(&attr);
+button2 = button_init(&attr2);
 
 while (1) {
     HAL_Delay(5); // 5ms
@@ -34,14 +37,17 @@ while (1) {
 }
 
 // 回调函数
-void button_callback(Button *btn, PressEvent event) {
-	if (btn == &button1) {
+void button_callback(Button_t btn, PressEvent event, uint8_t repeat) {
+	if (btn == button1) {
+		if (event == PRESS_DOWN) {
+			printf("PRESS_DOWN\n");
+			button_deInit(btn);
+			printf("remove button1\n");
+		}
+	} else if (btn == button2) {
 		if (event == PRESS_REPEAT) {
-			printf("PRESS_REPEAT -> %d!\n", btn->repeat);
+			printf("PRESS_REPEAT -> %d\n", repeat);
 		}
 	}
 }
-
-// 删除按钮
-button_deInit(&button1);
 ```

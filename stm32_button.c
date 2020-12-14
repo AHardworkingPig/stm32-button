@@ -2,7 +2,23 @@
 
 #define EVENT_CB(ev)    \
 	if (handle->cb[ev]) \
-	handle->cb[ev]((Button *)handle,(PressEvent) (handle->event))
+	handle->cb[ev]((Button_t)handle,(PressEvent)handle->event,(uint8_t)handle->repeat)
+
+typedef void (*BtnCallback)(void*, PressEvent, uint8_t);
+
+typedef struct {
+	uint16_t ticks;
+	uint8_t repeat :4; // max 15
+	uint8_t event :4;
+	uint8_t state :3;
+	uint8_t debounce_cnt :3;
+	uint8_t active_level :1;
+	uint8_t button_level :1;
+	GPIO_TypeDef *GPIOx;
+	uint16_t GPIO_PIN_x;
+	BtnCallback cb[EVENT_NUM];
+	struct Button *next;
+} Button;
 
 // button handle list head.
 static Button *head_handle = NULL;
@@ -11,33 +27,32 @@ static Button *head_handle = NULL;
  * @brief  Initializes the button struct handle.
  * @param  handle: the button handle struct.
  * @param  attr: button attr instance.
- * @retval 0: succeed. -1: already exist.
+ * @retval Button_t: success:handle,failed:NULL.
  */
-int8_t button_init(Button *handle, const Btn_init_attr *attr) {
-	Button *target = head_handle;
-	while (target) {
-		if (target == handle)
-			return -1; // already exist.
-		target = target->next;
+Button_t button_init(const Btn_init_attr *attr) {
+	// allocate memory.
+	Button *thisHandle = (Button*) malloc(sizeof(Button));
+	if (!thisHandle) {
+		return NULL; // allocate memory failed.
 	}
 
-	memset(handle, 0, sizeof(Button));
-	handle->event = (uint8_t) NONE_PRESS;
-	handle->GPIOx = attr->GPIOx;
-	handle->GPIO_PIN_x = attr->GPIO_PIN_x;
-	handle->active_level = (uint8_t) attr->active_level;
-	handle->button_level = !handle->active_level;
+	memset(thisHandle, 0, sizeof(Button));
+	thisHandle->event = (uint8_t) NONE_PRESS;
+	thisHandle->GPIOx = attr->GPIOx;
+	thisHandle->GPIO_PIN_x = attr->GPIO_PIN_x;
+	thisHandle->active_level = (uint8_t) attr->active_level;
+	thisHandle->button_level = !thisHandle->active_level;
 
 	// Attach the button event callback function
 	for (uint8_t i = 0; i < attr->event_num; i++) {
-		handle->cb[attr->event[i]] =
-				(void (*)(void*, PressEvent)) button_callback;
+		thisHandle->cb[attr->event[i]] =
+				(void (*)(void*, PressEvent, uint8_t)) button_callback;
 	}
 
 	// start button
-	handle->next = head_handle;
-	head_handle = handle;
-	return 0; // success
+	thisHandle->next = head_handle;
+	head_handle = thisHandle;
+	return (Button_t) thisHandle; // success
 }
 
 /**
@@ -146,11 +161,11 @@ static void button_handler(Button *handle) {
  * @param  handle: target handle struct.
  * @retval none.
  */
-void button_deInit(Button *handle) {
+void button_deInit(Button_t handle) {
 	Button **curr;
 	for (curr = &head_handle; *curr;) {
 		Button *entry = *curr;
-		if (entry == handle) {
+		if (entry == (Button*) handle) {
 			*curr = entry->next;
 			free(entry);
 		} else
@@ -174,8 +189,10 @@ void button_ticks() {
  * @brief Callback Function.
  * @param btn: button instance.
  * @param event: button event.
+ * @param repeat: button repeat.
  * @retval none.
  */
-void __attribute__((weak)) button_callback(Button *btn, PressEvent event) {
+void __attribute__((weak)) button_callback(Button_t btn, PressEvent event,
+		uint8_t repeat) {
 	// nothing to do,please rewrite.
 }

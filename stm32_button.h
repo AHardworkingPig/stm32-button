@@ -14,6 +14,9 @@
 #define SHORT_TICKS (300 / TICKS_INTERVAL)
 #define LONG_TICKS (1000 / TICKS_INTERVAL)
 
+// button handler
+typedef void *Button_t;
+
 typedef enum {
 	PRESS_DOWN = 0u,
 	PRESS_UP,
@@ -24,29 +27,14 @@ typedef enum {
 	LONG_PRESS_HOLD
 } PressEvent;
 
-enum {
-	EVENT_NUM = 7u, NONE_PRESS
-};
-
 typedef enum {
 	ONE = 1u, TWO, THREE, FOUR, FIVE, SIX, SEVEN
 } EventNumber;
 
-typedef void (*BtnCallback)(void*, PressEvent);
-
-typedef struct Button {
-	uint16_t ticks;
-	uint8_t repeat :4; // max 15
-	uint8_t event :4;
-	uint8_t state :3;
-	uint8_t debounce_cnt :3;
-	uint8_t active_level :1;
-	uint8_t button_level :1;
-	GPIO_TypeDef *GPIOx;
-	uint16_t GPIO_PIN_x;
-	BtnCallback cb[EVENT_NUM];
-	struct Button *next;
-} Button;
+// System only
+enum {
+	EVENT_NUM = 7u, NONE_PRESS
+};
 
 typedef struct {
 	GPIO_TypeDef *GPIOx;
@@ -61,10 +49,10 @@ extern "C"
 {
 #endif
 
-int8_t button_init(Button *handle, const Btn_init_attr *attr);
-void button_deInit(Button *handle);
+Button_t button_init(const Btn_init_attr *attr);
+void button_deInit(Button_t handle);
 void button_ticks(void);
-void button_callback(Button *btn, PressEvent event);
+void button_callback(Button_t btn, PressEvent event, uint8_t repeat);
 
 #ifdef __cplusplus
 }
